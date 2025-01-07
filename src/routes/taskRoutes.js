@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const taskController = require("../controllers/taskController");
+const TaskController = require("../controllers/TaskController");
 
-router.post("/", taskController.createTask);
-router.get("/", taskController.getAllTasks);
-router.get("/stats", taskController.getTaskStats);
-router.put("/:id", taskController.updateTask);
-router.delete("/:id", taskController.deleteTask);
+// Rotas para tarefas
+router.post("/", TaskController.createTask.bind(TaskController));
+router.get("/", TaskController.getAllTasks.bind(TaskController));
+router.put("/:id", TaskController.updateTask.bind(TaskController));
+router.delete("/:id", TaskController.deleteTask.bind(TaskController));
+router.get("/stats", TaskController.getTaskStats.bind(TaskController));
 
 module.exports = router;

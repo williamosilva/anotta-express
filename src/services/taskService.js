@@ -1,80 +1,66 @@
-const db = require("../config/database");
+const { pool } = require("../config/database");
 
 class TaskService {
   async createTask(title, description) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        "INSERT INTO tasks (title, description) VALUES (?, ?)",
-        [title, description],
-        function (err) {
-          if (err) return reject(err);
-          resolve({
-            id: this.lastID,
-            title,
-            description,
-            status: "PENDING",
-            created_at: new Date().toISOString(),
-          });
-        }
-      );
-    });
+    const query = `
+      INSERT INTO tasks (title, description)
+      VALUES ($1, $2)
+      RETURNING id, title, description, status, created_at
+    `;
+    const values = [title, description];
+    const result = await pool.query(query, values);
+    return result.rows[0];
   }
 
   async getAllTasks() {
-    return new Promise((resolve, reject) => {
-      db.all("SELECT * FROM tasks", [], (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows);
-      });
-    });
+    const query = "SELECT * FROM tasks ORDER BY created_at DESC";
+    const result = await pool.query(query);
+    return result.rows;
   }
 
   async updateTask(id, title, description, status) {
-    return new Promise((resolve, reject) => {
-      db.run(
-        "UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ?",
-        [title, description, status, id],
-        function (err) {
-          if (err) return reject(err);
-          if (this.changes === 0) {
-            return reject(new Error("Tarefa não encontrada"));
-          }
-          resolve({ message: "Tarefa atualizada com sucesso" });
-        }
-      );
-    });
+    const query = `
+      UPDATE tasks 
+      SET title = $1, description = $2, status = $3 
+      WHERE id = $4
+      RETURNING *
+    `;
+    const values = [title, description, status, id];
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      throw new Error("Tarefa não encontrada");
+    }
+
+    return result.rows[0];
   }
 
   async deleteTask(id) {
-    return new Promise((resolve, reject) => {
-      db.run("DELETE FROM tasks WHERE id = ?", id, function (err) {
-        if (err) return reject(err);
-        if (this.changes === 0) {
-          return reject(new Error("Tarefa não encontrada"));
-        }
-        resolve({ message: "Tarefa deletada com sucesso" });
-      });
-    });
+    const query = "DELETE FROM tasks WHERE id = $1 RETURNING *";
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      throw new Error("Tarefa não encontrada");
+    }
+
+    return { message: "Tarefa deletada com sucesso" };
   }
 
   async getTaskStats() {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) as completed
-        FROM tasks`,
-        [],
-        (err, row) => {
-          if (err) return reject(err);
-          resolve({
-            completed: row.completed,
-            total: row.total,
-            formatted: `${row.completed}/${row.total}`,
-          });
-        }
-      );
-    });
+    const query = `
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed
+      FROM tasks
+    `;
+    const result = await pool.query(query);
+    const { total, completed } = result.rows[0];
+
+    return {
+      completed,
+      total,
+      formatted: `${completed}/${total}`,
+    };
   }
 }
 
