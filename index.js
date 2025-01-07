@@ -7,7 +7,6 @@ const taskRoutes = require("./src/routes/taskRoutes");
 
 const app = express();
 
-// Inicializa o banco
 initDb().catch(console.error);
 
 app.use(bodyParser.json());
