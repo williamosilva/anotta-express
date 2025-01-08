@@ -21,7 +21,7 @@ Anotta é uma API RESTful construída com Express.js que fornece funcionalidades
 
 1. Clone o repositório:
 ```bash
-git clone <url-do-repositorio>
+git clone <url-do-repositorio>](https://github.com/williamosilva/anotta-express)
 cd anotta
 ```
 
